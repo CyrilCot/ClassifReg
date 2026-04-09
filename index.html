@@ -61,16 +61,18 @@
 // ║  👉 CONFIGUREZ CES 3 VALEURS AVEC VOTRE BUDIBASE           ║
 // ╚══════════════════════════════════════════════════════════════╝
 const BUDIBASE = {
-  HOST:     "https://c2cqvoy3n.budibase.app/",  // ex: https://monhopital.budibase.app
+  HOST:     "https://c2cqvoy3n.budibase.app",  // ex: https://monhopital.budibase.app (sans slash final)
   API_KEY:  "d6edcc0da6be0a764dc89f8f5fa6f4be-0042a3dfdbf7ab8fd0953aac9ccebbe80c9b485ef3c4bf8d1a1ade8857e93c68ed0701f4bf46903b7f59",                        // Profil → API key
-  APP_ID:   "app_dev_c2cqvoy3n_58dc6b35ade94b7687f18787c1a5a961",                  // Dans l'URL du builder
+  APP_ID:   "app_c2cqvoy3n_58dc6b35ade94b7687f18787c1a5a961",                  // ⚠️ App publiée (sans _dev_) — publiez l'app dans Budibase d'abord
   TABLE_ID: "ta_fc9dc6bcb6cd4232895aae97c966275f",                   // Dans l'URL quand vous cliquez sur la table
 };
 // ════════════════════════════════════════════════════════════════
 
 async function saveRow(data) {
   try {
-    const resp = await fetch(`${BUDIBASE.HOST}/api/public/v1/tables/${BUDIBASE.TABLE_ID}/rows`, {
+    const host = BUDIBASE.HOST.replace(/\/+$/, "");
+    const url = `${host}/api/public/v1/tables/${BUDIBASE.TABLE_ID}/rows`;
+    const resp = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type":       "application/json",
@@ -79,10 +81,16 @@ async function saveRow(data) {
       },
       body: JSON.stringify(data),
     });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new Error(`HTTP ${resp.status} — ${body}`);
+    }
     return { ok: true };
   } catch (e) {
     console.error("Budibase save error:", e);
+    if (e instanceof TypeError) {
+      return { ok: false, error: "Failed to fetch — vérifiez que l'app est publiée dans Budibase, que l'APP_ID ne contient pas « _dev_ » et que la connexion réseau est active." };
+    }
     return { ok: false, error: e.message };
   }
 }
