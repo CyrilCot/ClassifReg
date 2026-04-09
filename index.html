@@ -46,10 +46,9 @@
 </style>
 </head>
 <body>
-  shdkljhdskjhlkfsdf
 <div class="app">
   <div class="header">
-    <h1>🔬 ClassifReg - OK</h1>
+    <h1>🔬 ClassifReg</h1>
     <p>Classification réglementaire de votre recherche clinique</p>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
@@ -221,7 +220,7 @@ function render(id){
   if(historique.length) h+='<button class="back-link" onclick="goBack()">&#8592; Revenir</button>';
   h+='<div class="card"><span class="step-badge">Etape '+step+'</span>';
   h+='<h2>'+q.titre+'</h2><p class="subtitle">'+q.sous+'</p><div class="options">';
-  for(var i=0;i<q.options.length;i++){h+='<button class="opt-btn" onclick="choose(+id+,+i)">'+q.options[i].label+'</button>';}
+  for(var i=0;i<q.options.length;i++){h+='<button class="opt-btn" onclick="choose(\''+id+'\','+i+')">'+q.options[i].label+'</button>';}
   h+='</div></div>';
   el.innerHTML=h;
 }
@@ -265,7 +264,7 @@ function showResult(id){
   if(sent){
     h+='<div class="save-status save-ok">&#9989; Enregistre dans Budibase</div>';
   }else{
-    h+='<div class="save-status save-err">&#9888; Erreur d'enregistrement</div>';
+    h+='<div class="save-status save-err">&#9888; Erreur d&#39;enregistrement</div>';
   }
   h+='<button class="btn-restart" onclick="restart()">&#128260; Recommencer</button>';
   h+='</div>';
