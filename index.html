@@ -56,59 +56,56 @@
 </div>
 
 <script>
-// ╔══════════════════════════════════════════════════════════════════╗
-// ║  👉 REMPLACEZ L'URL CI-DESSOUS PAR VOTRE WEBHOOK BUDIBASE       ║
-// ╚══════════════════════════════════════════════════════════════════╝
-const WEBHOOK_URL = "https://c2cqvoy3n.budibase.app/api/webhooks/wh_dac94bb0118c461e935392117d8d4f4d";
+var WEBHOOK_URL = "https://c2cqvoy3n.budibase.app/api/webhooks/wh_dac94bb0118c461e935392117d8d4f4d";
 
-async function saveRow(data) {
+function saveRow(data) {
   try {
-    const resp = await fetch(WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    return { ok: true };
+    var blob = new Blob([JSON.stringify(data)], { type: "text/plain" });
+    var sent = navigator.sendBeacon(WEBHOOK_URL, blob);
+    return sent;
   } catch (e) {
-    console.error("Save error:", e);
-    return { ok: false, error: e.message };
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", WEBHOOK_URL, true);
+      xhr.setRequestHeader("Content-Type", "text/plain");
+      xhr.send(JSON.stringify(data));
+      return true;
+    } catch (e2) {
+      return false;
+    }
   }
 }
 
-// ══════════════════════════════════════════════════
-// Arbre de décision complet
-// ══════════════════════════════════════════════════
-const Q = {
+var Q = {
   q1:{titre:"Participation de patients hors soins habituels ?",sous:"Votre étude implique-t-elle des personnes au-delà de leur prise en charge habituelle ?",champ:"q1_patients_hors_soins",options:[
     {label:"OUI — Participation de patients hors soins habituels",value:"OUI",next:"q2"},
-    {label:"NON — Pas de participation hors soins habituels",value:"NON",next:"q2b"},
+    {label:"NON — Pas de participation hors soins habituels",value:"NON",next:"q2b"}
   ]},
   q2b:{titre:"Type de données ou échantillons ?",sous:"Quelle est la nature des données ou échantillons utilisés ?",champ:"q2b_type_donnees",options:[
     {label:"Données dossier / échantillons / déchets opératoires",value:"Données dossier",next:"q_rniph"},
-    {label:"Données SNDS",value:"Données SNDS",next:"R_SNDS"},
+    {label:"Données SNDS",value:"Données SNDS",next:"R_SNDS"}
   ]},
   q_rniph:{titre:"Étude génétique ou transfert hors UE ?",sous:"Votre étude présente-t-elle l'une de ces particularités ?",champ:"q_rniph",options:[
     {label:"Étude génétique constitutionnelle",value:"Génétique",next:"R_RNIPH_G"},
     {label:"Transfert hors Union Européenne",value:"Transfert UE",next:"R_RNIPH_T"},
-    {label:"Aucun des deux",value:"Aucun",next:"R_RNIPH"},
+    {label:"Aucun des deux",value:"Aucun",next:"R_RNIPH"}
   ]},
   q2:{titre:"Votre recherche évalue quoi ?",sous:"Quel est l'objet principal de votre recherche ?",champ:"q2_type_evaluation",options:[
     {label:"Médicament sans AMM ou hors indication",value:"Médicament sans AMM",next:"R_RE_MED"},
     {label:"Médicament avec AMM dans ses indications",value:"Médicament avec AMM",next:"q3"},
     {label:"DM non marqué CE ou hors notice",value:"DM hors CE",next:"R_RE_DM"},
-    {label:"Produit de santé autre (PSL, biologique…)",value:"PSL/biologique",next:"R1_PSL"},
+    {label:"Produit de santé autre (PSL, biologique...)",value:"PSL/biologique",next:"R1_PSL"},
     {label:"Hors produit de santé / cosmétique hors usage",value:"Cosmétique",next:"R1_COS"},
     {label:"Technique chirurgicale",value:"Chirurgie",next:"q_chir"},
-    {label:"Aucune de ces réponses",value:"Aucune",next:"R_NONE"},
+    {label:"Aucune de ces réponses",value:"Aucune",next:"R_NONE"}
   ]},
   q_chir:{titre:"Technique validée ou nouvelle ?",sous:"La technique chirurgicale est-elle déjà validée ?",champ:"q_chir",options:[
     {label:"Technique validée",value:"Validée",next:"R2_CHIR"},
-    {label:"Technique nouvelle",value:"Nouvelle",next:"R1_CHIR"},
+    {label:"Technique nouvelle",value:"Nouvelle",next:"R1_CHIR"}
   ]},
   q3:{titre:"Procédures supplémentaires ?",sous:"Votre étude ajoute-t-elle des procédures au-delà du soin habituel ?",champ:"q3_procedures_supp",options:[
     {label:"SANS procédure supplémentaire",value:"SANS",next:"q4a"},
-    {label:"AVEC procédures supplémentaires",value:"AVEC",next:"q4b"},
+    {label:"AVEC procédures supplémentaires",value:"AVEC",next:"q4b"}
   ]},
   q4a:{titre:"Type d'ajout ?",sous:"Quel type de recueil ou acte supplémentaire est prévu ?",champ:"q4a_type_ajout",options:[
     {label:"Capteurs extra-corporels non invasifs",value:"Capteurs",next:"R3_CAPT"},
@@ -117,121 +114,120 @@ const Q = {
     {label:"Questionnaire / Entretien",value:"Questionnaire",next:"q_quest"},
     {label:"Analyse sanguine",value:"Sanguine",next:"q_sang"},
     {label:"Biologique non sanguin",value:"Bio non sanguin",next:"q_biol"},
-    {label:"Anthropo / audio-vidéo / TCC",value:"Anthropo",next:"R3_ANTH"},
+    {label:"Anthropo / audio-vidéo / TCC",value:"Anthropo",next:"R3_ANTH"
   ]},
   q_quest:{titre:"Modifie la prise en charge ?",sous:"Le questionnaire engendre-t-il des contraintes pour le patient ?",champ:"q_quest",options:[
     {label:"Non — contraintes négligeables",value:"Négligeables",next:"R3_QUEST"},
-    {label:"Oui — contraintes non négligeables",value:"Non négligeables",next:"R2_QUEST"},
+    {label:"Oui — contraintes non négligeables",value:"Non négligeables",next:"R2_QUEST"}
   ]},
   q_sang:{titre:"Type de prélèvement sanguin ?",sous:"Comment le prélèvement sanguin est-il réalisé ?",champ:"q_sang",options:[
     {label:"Prélèvement additionnel",value:"Additionnel",next:"R3_SANG1"},
-    {label:"Tube supplémentaire lors d'un prélèvement prévu",value:"Tube supp",next:"R3_SANG2"},
+    {label:"Tube supplémentaire lors d'un prélèvement prévu",value:"Tube supp",next:"R3_SANG2"}
   ]},
   q_biol:{titre:"Type de prélèvement non sanguin ?",sous:"Quelle est la nature du prélèvement biologique ?",champ:"q_biol",options:[
     {label:"Salive / urine / selle / écouvillonnage superficiel",value:"Superficiel",next:"R3_BIOL"},
     {label:"Biopsie cutanée / écouvillonnage profond",value:"Biopsie profond",next:"q_face"},
     {label:"Liquide amniotique",value:"Amniotique",next:"q_amnio"},
-    {label:"Liquide céphalo-rachidien",value:"LCR",next:"q_lcr"},
+    {label:"Liquide céphalo-rachidien",value:"LCR",next:"q_lcr"}
   ]},
   q_face:{titre:"Touche la face ou les plis ?",sous:"La biopsie concerne-t-elle la face ou les plis cutanés ?",champ:"q_face",options:[
     {label:"Oui",value:"Oui",next:"R2_FACE"},
-    {label:"Non",value:"Non",next:"q_soin"},
+    {label:"Non",value:"Non",next:"q_soin"}
   ]},
   q_soin:{titre:"Dans le cadre du soin prévu ?",sous:"Ce prélèvement est-il réalisé dans le cadre d'un soin déjà prévu ?",champ:"q_soin",options:[
     {label:"Oui",value:"Oui",next:"R3_SOIN"},
-    {label:"Non",value:"Non",next:"R2_SOIN"},
+    {label:"Non",value:"Non",next:"R2_SOIN"}
   ]},
   q_amnio:{titre:"Prélèvement amniotique prévu dans le soin ?",sous:"Un prélèvement de liquide amniotique est-il déjà prévu ?",champ:"q_amnio",options:[
-    {label:"Oui, volume total < 5 ml",value:"< 5ml",next:"R3_AMNIO"},
-    {label:"Oui ≥ 5 ml ou Non",value:"≥ 5ml ou Non",next:"R2_AMNIO"},
+    {label:"Oui, volume total inferieur a 5 ml",value:"inf 5ml",next:"R3_AMNIO"},
+    {label:"Oui superieur ou egal 5 ml ou Non",value:"sup 5ml ou Non",next:"R2_AMNIO"}
   ]},
   q_lcr:{titre:"Prélèvement LCR prévu dans le soin ?",sous:"Un prélèvement de LCR est-il déjà prévu ?",champ:"q_lcr",options:[
-    {label:"Oui, volume total < 5 ml",value:"< 5ml",next:"R3_LCR"},
-    {label:"Oui ≥ 5 ml ou Non",value:"≥ 5ml ou Non",next:"R2_LCR"},
+    {label:"Oui, volume total inferieur a 5 ml",value:"inf 5ml",next:"R3_LCR"},
+    {label:"Oui superieur ou egal 5 ml ou Non",value:"sup 5ml ou Non",next:"R2_LCR"}
   ]},
   q4b:{titre:"Type d'intervention ajoutée ?",sous:"Quel type de procédure supplémentaire est ajouté ?",champ:"q4b_type_intervention",options:[
-    {label:"Dispositif médical UE / médicament auxiliaire",value:"DM/méd auxiliaire",next:"q_medaux"},
+    {label:"Dispositif médical UE / médicament auxiliaire",value:"DM/med auxiliaire",next:"q_medaux"},
     {label:"Capteur / imagerie / exploration fonctionnelle",value:"Capteur/imagerie",next:"q_conform"},
     {label:"Acte invasif non habituel",value:"Invasif",next:"q_invasif"},
-    {label:"Acte non médical (ostéo, hypnose…)",value:"Non médical",next:"R2_NONMED"},
+    {label:"Acte non médical (osteo, hypnose...)" ,value:"Non medical",next:"R2_NONMED"}
   ]},
   q_medaux:{titre:"Administration conforme à l'autorisation ?",sous:"Le DM ou médicament auxiliaire est-il conforme à son autorisation ?",champ:"q_medaux",options:[
-    {label:"Conforme AMM ou données probantes",value:"Conforme",next:"R2_MEDAUX"},
+    {label:"Conforme AMM ou données probantes",value:"Conforme",next:"R2_MEDAUX"}
   ]},
   q_conform:{titre:"Utilisation conforme à la destination ?",sous:"Le capteur ou dispositif est-il conforme à sa notice ?",champ:"q_conform",options:[
     {label:"Oui — conforme",value:"Conforme",next:"q_contraste"},
-    {label:"Non — hors notice",value:"Hors notice",next:"R_RE_DM2"},
+    {label:"Non — hors notice",value:"Hors notice",next:"R_RE_DM2"}
   ]},
   q_contraste:{titre:"Produit de contraste ou radiopharmaceutique ?",sous:"L'examen implique-t-il un produit de contraste ?",champ:"q_contraste",options:[
     {label:"Oui",value:"Oui",next:"R2_CONT"},
-    {label:"Non",value:"Non",next:"R2_NOCONT"},
+    {label:"Non",value:"Non",next:"R2_NOCONT"}
   ]},
   q_invasif:{titre:"Franchissement barrière cutanée ou muqueuse ?",sous:"L'acte franchit-il une barrière cutanée ou muqueuse ?",champ:"q_invasif",options:[
     {label:"Oui",value:"Oui",next:"R1_INVASIF"},
-    {label:"Non",value:"Non",next:"R2_INVASIF"},
-  ]},
+    {label:"Non",value:"Non",next:"R2_INVASIF"}
+  ]}
 };
 
-const R = {
-  R_RNIPH:   {cat:"RNIPH",  titre:"RNIPH — MR004 CNIL",                          delai:"",        couleur:"#2980b9",icon:"📋",detail:"Recherche n'impliquant pas la personne humaine. Déclaration MR004 à la CNIL."},
-  R_RNIPH_G: {cat:"RNIPH",  titre:"RNIPH — MR004 + Consentement génétique écrit", delai:"",        couleur:"#2980b9",icon:"🧬",detail:"Étude génétique constitutionnelle nécessitant un consentement écrit spécifique."},
-  R_RNIPH_T: {cat:"RNIPH",  titre:"RNIPH — MR004 + Info sortie données UE",      delai:"",        couleur:"#2980b9",icon:"🌍",detail:"Transfert de données hors UE : information spécifique à fournir."},
-  R_SNDS:    {cat:"SNDS",   titre:"RNIPH – SNDS — MR005 / MR006 CNIL",           delai:"",        couleur:"#16a085",icon:"🗄️",detail:"Accès aux données du Système National des Données de Santé."},
-  R_RE_MED:  {cat:"RE",     titre:"RE Médicament — EU 536/2014",                  delai:"~6 mois", couleur:"#7c3aed",icon:"💊",detail:"Médicament sans AMM ou hors indication. Règlement européen 536/2014."},
-  R_RE_DM:   {cat:"RE",     titre:"RE Dispositifs Médicaux — Règl. UE 2017/745",  delai:"~6 mois", couleur:"#7c3aed",icon:"🩺",detail:"DM non marqué CE ou hors notice."},
-  R_RE_DM2:  {cat:"RE",     titre:"RE Dispositifs Médicaux — Règl. UE 2017/745",  delai:"~6 mois", couleur:"#7c3aed",icon:"🩺",detail:"Utilisation hors notice d'un dispositif médical."},
-  R1_PSL:    {cat:"RIPH 1", titre:"RIPH 1",delai:"~4 mois",  couleur:"#c0392b",icon:"🔴",detail:"Produit de santé autre (PSL, produit biologique…)."},
-  R1_COS:    {cat:"RIPH 1", titre:"RIPH 1",delai:"~4 mois",  couleur:"#c0392b",icon:"🔴",detail:"Hors produit de santé / cosmétique hors usage normal."},
+var R = {
+  R_RNIPH:   {cat:"RNIPH",  titre:"RNIPH — MR004 CNIL",                          delai:"",        couleur:"#2980b9",icon:"📋",detail:"Recherche n'impliquant pas la personne humaine. Declaration MR004 a la CNIL."},
+  R_RNIPH_G: {cat:"RNIPH",  titre:"RNIPH — MR004 + Consentement genetique ecrit", delai:"",        couleur:"#2980b9",icon:"🧬",detail:"Etude genetique constitutionnelle necessitant un consentement ecrit specifique."},
+  R_RNIPH_T: {cat:"RNIPH",  titre:"RNIPH — MR004 + Info sortie donnees UE",      delai:"",        couleur:"#2980b9",icon:"🌍",detail:"Transfert de donnees hors UE : information specifique a fournir."},
+  R_SNDS:    {cat:"SNDS",   titre:"RNIPH - SNDS — MR005 / MR006 CNIL",           delai:"",        couleur:"#16a085",icon:"🗄",detail:"Acces aux donnees du Systeme National des Donnees de Sante."},
+  R_RE_MED:  {cat:"RE",     titre:"RE Medicament — EU 536/2014",                  delai:"~6 mois", couleur:"#7c3aed",icon:"💊",detail:"Medicament sans AMM ou hors indication. Reglement europeen 536/2014."},
+  R_RE_DM:   {cat:"RE",     titre:"RE Dispositifs Medicaux — Regl. UE 2017/745",  delai:"~6 mois", couleur:"#7c3aed",icon:"🩺",detail:"DM non marque CE ou hors notice."},
+  R_RE_DM2:  {cat:"RE",     titre:"RE Dispositifs Medicaux — Regl. UE 2017/745",  delai:"~6 mois", couleur:"#7c3aed",icon:"🩺",detail:"Utilisation hors notice d'un dispositif medical."},
+  R1_PSL:    {cat:"RIPH 1", titre:"RIPH 1",delai:"~4 mois",  couleur:"#c0392b",icon:"🔴",detail:"Produit de sante autre (PSL, produit biologique...)."},
+  R1_COS:    {cat:"RIPH 1", titre:"RIPH 1",delai:"~4 mois",  couleur:"#c0392b",icon:"🔴",detail:"Hors produit de sante / cosmetique hors usage normal."},
   R1_CHIR:   {cat:"RIPH 1", titre:"RIPH 1",delai:"~4 mois",  couleur:"#c0392b",icon:"🔴",detail:"Technique chirurgicale nouvelle."},
-  R1_INVASIF:{cat:"RIPH 1", titre:"RIPH 1",delai:"~4 mois",  couleur:"#c0392b",icon:"🔴",detail:"Acte invasif franchissant la barrière cutanée ou muqueuse."},
-  R2_CHIR:   {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Technique chirurgicale validée."},
+  R1_INVASIF:{cat:"RIPH 1", titre:"RIPH 1",delai:"~4 mois",  couleur:"#c0392b",icon:"🔴",detail:"Acte invasif franchissant la barriere cutanee ou muqueuse."},
+  R2_CHIR:   {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Technique chirurgicale validee."},
   R2_QUEST:  {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Questionnaire modifiant la prise en charge."},
-  R2_FACE:   {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Biopsie/écouvillonnage touchant la face ou les plis."},
-  R2_SOIN:   {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Prélèvement biologique hors cadre du soin prévu."},
-  R2_AMNIO:  {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Prélèvement amniotique ≥ 5 ml ou non prévu dans le soin."},
-  R2_LCR:    {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Prélèvement LCR ≥ 5 ml ou non prévu dans le soin."},
-  R2_MEDAUX: {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"DM UE / médicament auxiliaire conforme."},
+  R2_FACE:   {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Biopsie/ecouvillonnage touchant la face ou les plis."},
+  R2_SOIN:   {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Prelevement biologique hors cadre du soin prevu."},
+  R2_AMNIO:  {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Prelevement amniotique superieur ou egal 5 ml ou non prevu dans le soin."},
+  R2_LCR:    {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Prelevement LCR superieur ou egal 5 ml ou non prevu dans le soin."},
+  R2_MEDAUX: {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"DM UE / medicament auxiliaire conforme."},
   R2_CONT:   {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Examen avec produit de contraste ou radiopharmaceutique."},
   R2_NOCONT: {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Capteur/imagerie conforme, sans produit de contraste."},
-  R2_INVASIF:{cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Acte invasif ne franchissant pas la barrière cutanée/muqueuse."},
-  R2_NONMED: {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Acte non médical (ostéopathie, hypnose…)."},
+  R2_INVASIF:{cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Acte invasif ne franchissant pas la barriere cutanee/muqueuse."},
+  R2_NONMED: {cat:"RIPH 2", titre:"RIPH 2",delai:"~3,5 mois",couleur:"#e67e22",icon:"🟠",detail:"Acte non medical (osteopathie, hypnose...)."},
   R3_CAPT:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Capteurs extra-corporels non invasifs."},
-  R3_ELEC:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Recueil électrophysiologique sur matériel implanté."},
-  R3_RAND:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Randomisation simple entre stratégies validées."},
-  R3_ANTH:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Anthropométrie, audio-vidéo, TCC."},
+  R3_ELEC:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Recueil electrophysiologique sur materiel implante."},
+  R3_RAND:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Randomisation simple entre strategies validees."},
+  R3_ANTH:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Anthropometrie, audio-video, TCC."},
   R3_QUEST:  {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Questionnaire/entretien sans modification de la prise en charge."},
-  R3_SANG1:  {cat:"RIPH 3", titre:"RIPH 3 + contrôle volumes",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prélèvement sanguin additionnel — vérifier les volumes."},
-  R3_SANG2:  {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Tube supplémentaire lors d'un prélèvement prévu."},
-  R3_BIOL:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prélèvement non invasif (salive, urine, selle…)."},
-  R3_SOIN:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prélèvement biologique dans le cadre du soin prévu."},
-  R3_AMNIO:  {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prélèvement amniotique prévu, volume < 5 ml."},
-  R3_LCR:    {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prélèvement LCR prévu, volume < 5 ml."},
-  R_NONE:    {cat:"Indéfini",titre:"Cas non défini",delai:"",  couleur:"#7f8c8d",icon:"❓",detail:"Situation non prédéfinie. Veuillez contacter l'URC."},
+  R3_SANG1:  {cat:"RIPH 3", titre:"RIPH 3 + controle volumes",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prelevement sanguin additionnel — verifier les volumes."},
+  R3_SANG2:  {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Tube supplementaire lors d'un prelevement prevu."},
+  R3_BIOL:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prelevement non invasif (salive, urine, selle...)."},
+  R3_SOIN:   {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prelevement biologique dans le cadre du soin prevu."},
+  R3_AMNIO:  {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prelevement amniotique prevu, volume inferieur a 5 ml."},
+  R3_LCR:    {cat:"RIPH 3", titre:"RIPH 3",delai:"~2,5 mois",couleur:"#27ae60",icon:"🟢",detail:"Prelevement LCR prevu, volume inferieur a 5 ml."},
+  R_NONE:    {cat:"Indefini",titre:"Cas non defini",delai:"",  couleur:"#7f8c8d",icon:"❓",detail:"Situation non predefinie. Veuillez contacter l'URC."}
 };
 
-// ══════════════════════════════════════════════════
-// Moteur du formulaire
-// ══════════════════════════════════════════════════
-let historique=[], reponses={};
-const maxDepth=7;
+var historique=[];
+var reponses={};
+var maxDepth=7;
 
 function render(id){
-  const el=document.getElementById("content");
-  if(R[id]){showResult(id);return}
-  const q=Q[id];if(!q)return;
-  const step=historique.length+1;
+  var el=document.getElementById("content");
+  if(R[id]){showResult(id);return;}
+  var q=Q[id];if(!q)return;
+  var step=historique.length+1;
   document.getElementById("progress").style.width=Math.min(100,(step/maxDepth)*100)+"%";
-  let h="";
-  if(historique.length) h+=`<button class="back-link" onclick="goBack()">← Revenir</button>`;
-  h+=`<div class="card"><span class="step-badge">Étape ${step}</span>`;
-  h+=`<h2>${q.titre}</h2><p class="subtitle">${q.sous}</p><div class="options">`;
-  q.options.forEach((_,i)=>{h+=`<button class="opt-btn" onclick="choose('${id}',${i})">${_.label}</button>`});
-  h+=`</div></div>`;
+  var h="";
+  if(historique.length) h+='<button class="back-link" onclick="goBack()">&#8592; Revenir</button>';
+  h+='<div class="card"><span class="step-badge">Etape '+step+'</span>';
+  h+='<h2>'+q.titre+'</h2><p class="subtitle">'+q.sous+'</p><div class="options">';
+  for(var i=0;i<q.options.length;i++){h+='<button class="opt-btn" onclick="choose(+id+,+i)">'+q.options[i].label+'</button>';}
+  h+='</div></div>';
   el.innerHTML=h;
 }
 
 function choose(fromId,i){
-  const q=Q[fromId],opt=q.options[i];
+  var q=Q[fromId];
+  var opt=q.options[i];
   reponses[q.champ]=opt.value;
   historique.push(fromId);
   render(opt.next);
@@ -239,55 +235,51 @@ function choose(fromId,i){
 
 function goBack(){
   if(!historique.length)return;
-  const prev=historique.pop();
+  var prev=historique.pop();
   delete reponses[Q[prev].champ];
   render(prev);
 }
 
-async function showResult(id){
-  const r=R[id];
+function showResult(id){
+  var r=R[id];
   document.getElementById("progress").style.width="100%";
 
-  const record={
-    ...reponses,
-    resultat_id:id,
-    resultat_classification:r.titre,
-    resultat_categorie:r.cat,
-    resultat_delai:r.delai||"",
-    resultat_couleur:r.couleur,
-    date_evaluation:new Date().toISOString(),
-  };
+  var record={};
+  var keys=Object.keys(reponses);
+  for(var k=0;k<keys.length;k++){record[keys[k]]=reponses[keys[k]];}
+  record.resultat_id=id;
+  record.resultat_classification=r.titre;
+  record.resultat_categorie=r.cat;
+  record.resultat_delai=r.delai||"";
+  record.resultat_couleur=r.couleur;
+  record.date_evaluation=new Date().toISOString();
 
-  let h=`<div class="result-card" style="background:${r.couleur}">`;
-  h+=`<div class="icon">${r.icon}</div><h2>${r.titre}</h2>`;
-  h+=`<p><strong>${r.cat}</strong></p>`;
-  if(r.delai) h+=`<span class="delai">⏱ Délai estimé : ${r.delai}</span>`;
-  h+=`<p class="detail">${r.detail}</p>`;
-  h+=`<div class="save-status" id="save-msg"><span class="spinner"></span> Enregistrement en cours…</div>`;
-  h+=`<button class="btn-restart" onclick="restart()">🔄 Recommencer</button>`;
-  h+=`</div>`;
+  var sent=saveRow(record);
 
-  h+=`<div class="chemin"><h3>🧭 Chemin parcouru</h3>`;
-  for(const[champ,val] of Object.entries(reponses)){
-    const qLabel=Object.values(Q).find(q=>q.champ===champ)?.titre||champ;
-    h+=`<div class="chemin-step"><span class="chemin-q">${qLabel}</span><span class="chemin-a">${val}</span></div>`;
+  var h='<div class="result-card" style="background:'+r.couleur+'">';
+  h+='<div class="icon">'+r.icon+'</div><h2>'+r.titre+'</h2>';
+  h+='<p><strong>'+r.cat+'</strong></p>';
+  if(r.delai) h+='<span class="delai">&#9201; Delai estime : '+r.delai+'</span>';
+  h+='<p class="detail">'+r.detail+'</p>';
+  if(sent){
+    h+='<div class="save-status save-ok">&#9989; Enregistre dans Budibase</div>';
+  }else{
+    h+='<div class="save-status save-err">&#9888; Erreur d'enregistrement</div>';
   }
-  h+=`</div>`;
+  h+='<button class="btn-restart" onclick="restart()">&#128260; Recommencer</button>';
+  h+='</div>';
+
+  h+='<div class="chemin"><h3>&#129517; Chemin parcouru</h3>';
+  var qKeys=Object.keys(reponses);
+  for(var j=0;j<qKeys.length;j++){var champ=qKeys[j];var val=reponses[champ];var qLabel=champ;var allQ=Object.keys(Q);for(var m=0;m<allQ.length;m++){if(Q[allQ[m]].champ===champ){qLabel=Q[allQ[m]].titre;break;}}
+h+='<div class="chemin-step"><span class="chemin-q">'+qLabel+'</span><span class="chemin-a">'+val+'</span></div>';
+}
+h+='</div>';
 
   document.getElementById("content").innerHTML=h;
-
-  const res=await saveRow(record);
-  const msg=document.getElementById("save-msg");
-  if(res.ok){
-    msg.className="save-status save-ok";
-    msg.innerHTML="✅ Enregistré dans Budibase";
-  }else{
-    msg.className="save-status save-err";
-    msg.innerHTML="⚠️ Erreur : "+(res.error||"vérifiez la configuration du webhook");
-  }
 }
 
-function restart(){historique=[];reponses={};render("q1")}
+function restart(){historique=[];reponses={};render("q1");}
 render("q1");
 </script>
 </body>
