@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartReg© — Classification réglementaire</title>
+<style>
+  :root{--riph1:#c0392b;--riph2:#e67e22;--riph3:#27ae60;--re:#7c3aed;--rniph:#2980b9;--snds:#16a085;--none:#7f8c8d;--bg:#f0f2f5;--card:#fff;--primary:#1e3a5f;--text:#1e293b;--muted:#64748b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding:2rem 1rem}
+  .app{max-width:680px;width:100%}
+  .header{text-align:center;margin-bottom:2rem}
+  .header h1{font-size:1.6rem;color:var(--primary);display:flex;align-items:center;justify-content:center;gap:.5rem}
+  .header p{color:var(--muted);margin-top:.4rem;font-size:.95rem}
+  .progress-bar{width:100%;height:6px;background:#dde1e7;border-radius:3px;margin-bottom:2rem;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#3b82f6);border-radius:3px;transition:width .4s ease}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);padding:2rem;margin-bottom:1.5rem;animation:fadeIn .35s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .card h2{font-size:1.15rem;color:var(--primary);margin-bottom:.4rem}
+  .card .subtitle{color:var(--muted);font-size:.88rem;margin-bottom:1.2rem}
+  .step-badge{display:inline-block;background:var(--primary);color:#fff;font-size:.75rem;padding:2px 10px;border-radius:99px;margin-bottom:.8rem;font-weight:600}
+  .options{display:flex;flex-direction:column;gap:.6rem}
+  .opt-btn{display:block;width:100%;text-align:left;padding:.9rem 1.1rem;border:2px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;font-size:.95rem;color:var(--text);transition:all .2s;line-height:1.4}
+  .opt-btn:hover{border-color:var(--primary);background:#f1f5f9}
+  .opt-btn:active{transform:scale(.985)}
+  .result-card{text-align:center;padding:2.5rem 2rem;border-radius:16px;color:#fff;animation:fadeIn .4s ease}
+  .result-card .icon{font-size:2.8rem;margin-bottom:.6rem}
+  .result-card h2{font-size:1.5rem;margin-bottom:.3rem;font-weight:700}
+  .result-card .delai{display:inline-block;margin-top:.6rem;background:rgba(255,255,255,.2);padding:4px 16px;border-radius:99px;font-size:.9rem;font-weight:600}
+  .result-card .detail{margin-top:1rem;font-size:.9rem;opacity:.9;line-height:1.5}
+  .btn-restart{display:block;margin:1.5rem auto 0;padding:.7rem 2rem;border:2px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:10px;cursor:pointer;font-size:.95rem;font-weight:600;transition:all .2s}
+  .btn-restart:hover{background:rgba(255,255,255,.15)}
+  .back-link{display:inline-flex;align-items:center;gap:.3rem;color:var(--muted);font-size:.85rem;cursor:pointer;margin-bottom:1rem;border:none;background:none;transition:color .2s}
+  .back-link:hover{color:var(--primary)}
+  .save-status{margin-top:1rem;font-size:.85rem;padding:.5rem 1rem;border-radius:8px}
+  .save-ok{background:rgba(255,255,255,.25)}
+  .save-err{background:rgba(255,0,0,.2)}
+  .chemin{margin-top:1.5rem;background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:1.5rem}
+  .chemin h3{font-size:.95rem;color:var(--primary);margin-bottom:.8rem}
+  .chemin-step{display:flex;gap:.8rem;padding:.4rem 0;font-size:.85rem;border-bottom:1px solid #f1f5f9}
+  .chemin-step:last-child{border-bottom:none}
+  .chemin-q{color:var(--muted);min-width:140px}
+  .chemin-a{font-weight:600;color:var(--text)}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:.4rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🔬 SmartReg©</h1>
+    <p>Classification réglementaire de votre recherche clinique</p>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+  <div id="content"></div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  👉 CONFIGUREZ CES 3 VALEURS AVEC VOTRE BUDIBASE           ║
+// ╚══════════════════════════════════════════════════════════════╝
+const BUDIBASE = {
+  HOST:     "https://c2cqvoy3n.budibase.app/",  // ex: https://monhopital.budibase.app
+  API_KEY:  "d6edcc0da6be0a764dc89f8f5fa6f4be-0042a3dfdbf7ab8fd0953aac9ccebbe80c9b485ef3c4bf8d1a1ade8857e93c68ed0701f4bf46903b7f59",                        // Profil → API key
+  APP_ID:   "app_dev_c2cqvoy3n_58dc6b35ade94b7687f18787c1a5a961",                  // Dans l'URL du builder
+  TABLE_ID: "ta_fc9dc6bcb6cd4232895aae97c966275f",                   // Dans l'URL quand vous cliquez sur la table
+};
+// ════════════════════════════════════════════════════════════════
+
+async function saveRow(data) {
+  try {
+    const resp = await fetch(`${BUDIBASE.HOST}/api/public/v1/tables/${BUDIBASE.TABLE_ID}/rows`, {
+      method: "POST",
+      headers: {
+        "Content-Type":       "application/json",
+        "x-budibase-api-key": BUDIBASE.API_KEY,
+        "x-budibase-app-id":  BUDIBASE.APP_ID,
+      },
+      body: JSON.stringify(data),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return { ok: true };
+  } catch (e) {
+    console.error("Budibase save error:", e);
+    return { ok: false, error: e.message };
+  }
+}
+
+// ══════════════════════════════════════════════════
+// Arbre de décision complet
+// ══════════════════════════════════════════════════
+const Q = {
+  q1: {
+    titre: "Participation de patients hors soins habituels ?",
+    sous: "Votre étude implique-t-elle des personnes au-delà de leur prise en charge habituelle ?",
+    champ: "q1_patients_hors_soins",
+    options: [
+      { label: "OUI — Participation de patients hors soins habituels", value: "OUI", next: "q2" },
+      { label: "NON — Pas de participation hors soins habituels", value: "NON", next: "q2b" },
+    ]
+  },
+  q2b: {
+    titre: "Type de données ou échantillons ?",
+    sous: "Quelle est la nature des données ou échantillons utilisés ?",
+    champ: "q2b_type_donnees",
+    options: [
+      { label: "Données dossier / échantillons / déchets opératoires", value: "Données dossier", next: "q_rniph" },
+      { label: "Données SNDS", value: "Données SNDS", next: "R_SNDS" },
+    ]
+  },
+  q_rniph: {
+    titre: "Étude génétique ou transfert hors UE ?",
+    sous: "Votre étude présente-t-elle l'une de ces particularités ?",
+    champ: "q_rniph",
+    options: [
+      { label: "Étude génétique constitutionnelle", value: "Génétique", next: "R_RNIPH_G" },
+      { label: "Transfert hors Union Européenne", value: "Transfert UE", next: "R_RNIPH_T" },
+      { label: "Aucun des deux", value: "Aucun", next: "R_RNIPH" },
+    ]
+  },
+  q2: {
+    titre: "Votre recherche évalue quoi ?",
+    sous: "Quel est l'objet principal de votre recherche ?",
+    champ: "q2_type_evaluation",
+    options: [
+      { label: "Médicament sans AMM ou hors indication", value: "Médicament sans AMM", next: "R_RE_MED" },
+      { label: "Médicament avec AMM dans ses indications", value: "Médicament avec AMM", next: "q3" },
+      { label: "DM non marqué CE ou hors notice", value: "DM hors CE", next: "R_RE_DM" },
+      { label: "Produit de santé autre (PSL, biologique…)", value: "PSL/biologique", next: "R1_PSL" },
+      { label: "Hors produit de santé / cosmétique hors usage", value: "Cosmétique", next: "R1_COS" },
+      { label: "Technique chirurgicale", value: "Chirurgie", next: "q_chir" },
+      { label: "Aucune de ces réponses", value: "Aucune", next: "R_NONE" },
+    ]
+  },
+  q_chir: {
+    titre: "Technique validée ou nouvelle ?",
+    sous: "La technique chirurgicale est-elle déjà validée ?",
+    champ: "q_chir",
+    options: [
+      { label: "Technique validée", value: "Validée", next: "R2_CHIR" },
+      { label: "Technique nouvelle", value: "Nouvelle", next: "R1_CHIR" },
+    ]
+  },
+  q3: {
+    titre: "Procédures supplémentaires ?",
+    sous: "Votre étude ajoute-t-elle des procédures au-delà du soin habituel ?",
+    champ: "q3_procedures_supp",
+    options: [
+      { label: "SANS procédure supplémentaire", value: "SANS", next: "q4a" },
+      { label: "AVEC procédures supplémentaires", value: "AVEC", next: "q4b" },
+    ]
+  },
+  q4a: {
+    titre: "Type d'ajout ?",
+    sous: "Quel type de recueil ou acte supplémentaire est prévu ?",
+    champ: "q4a_type_ajout",
+    options: [
+      { label: "Capteurs extra-corporels non invasifs", value: "Capteurs", next: "R3_CAPT" },
+      { label: "Recueil électrophysiologique sur matériel implanté", value: "Électrophysio", next: "R3_ELEC" },
+      { label: "Randomisation simple", value: "Randomisation", next: "R3_RAND" },
+      { label: "Questionnaire / Entretien", value: "Questionnaire", next: "q_quest" },
+      { label: "Analyse sanguine", value: "Sanguine", next: "q_sang" },
+      { label: "Biologique non sanguin", value: "Bio non sanguin", next: "q_biol" },
+      { label: "Anthropo / audio-vidéo / TCC", value: "Anthropo", next: "R3_ANTH" },
+    ]
+  },
+  q_quest: {
+    titre: "Modifie la prise en charge ?",
+    sous: "Le questionnaire engendre-t-il des contraintes pour le patient ?",
+    champ: "q_quest",
+    options: [
+      { label: "Non — contraintes négligeables", value: "Négligeables", next: "R3_QUEST" },
+      { label: "Oui — contraintes non négligeables", value: "Non négligeables", next: "R2_QUEST" },
+    ]
+  },
+  q_sang: {
+    titre: "Type de prélèvement sanguin ?",
+    sous: "Comment le prélèvement sanguin est-il réalisé ?",
+    champ: "q_sang",
+    options: [
+      { label: "Prélèvement additionnel", value: "Additionnel", next: "R3_SANG1" },
+      { label: "Tube supplémentaire lors d'un prélèvement prévu", value: "Tube supp", next: "R3_SANG2" },
+    ]
+  },
+  q_biol: {
+    titre: "Type de prélèvement non sanguin ?",
+    sous: "Quelle est la nature du prélèvement biologique ?",
+    champ: "q_biol",
+    options: [
+      { label: "Salive / urine / selle / écouvillonnage superficiel", value: "Superficiel", next: "R3_BIOL" },
+      { label: "Biopsie cutanée / écouvillonnage profond", value: "Biopsie profond", next: "q_face" },
+      { label: "Liquide amniotique", value: "Amniotique", next: "q_amnio" },
+      { label: "Liquide céphalo-rachidien", value: "LCR", next: "q_lcr" },
+    ]
+  },
+  q_face: {
+    titre: "Touche la face ou les plis ?",
+    sous: "La biopsie concerne-t-elle la face ou les plis cutanés ?",
+    champ: "q_face",
+    options: [
+      { label: "Oui", value: "Oui", next: "R2_FACE" },
+      { label: "Non", value: "Non", next: "q_soin" },
+    ]
+  },
+  q_soin: {
+    titre: "Dans le cadre du soin prévu ?",
+    sous: "Ce prélèvement est-il réalisé dans le cadre d'un soin déjà prévu ?",
+    champ: "q_soin",
+    options: [
+      { label: "Oui", value: "Oui", next: "R3_SOIN" },
+      { label: "Non", value: "Non", next: "R2_SOIN" },
+    ]
+  },
+  q_amnio: {
+    titre: "Prélèvement amniotique prévu dans le soin ?",
+    sous: "Un prélèvement de liquide amniotique est-il déjà prévu ?",
+    champ: "q_amnio",
+    options: [
+      { label: "Oui, volume total < 5 ml", value: "< 5ml", next: "R3_AMNIO" },
+      { label: "Oui ≥ 5 ml ou Non", value: "≥ 5ml ou Non", next: "R2_AMNIO" },
+    ]
+  },
+  q_lcr: {
+    titre: "Prélèvement LCR prévu dans le soin ?",
+    sous: "Un prélèvement de LCR est-il déjà prévu ?",
+    champ: "q_lcr",
+    options: [
+      { label: "Oui, volume total < 5 ml", value: "< 5ml", next: "R3_LCR" },
+      { label: "Oui ≥ 5 ml ou Non", value: "≥ 5ml ou Non", next: "R2_LCR" },
+    ]
+  },
+  q4b: {
+    titre: "Type d'intervention ajoutée ?",
+    sous: "Quel type de procédure supplémentaire est ajouté ?",
+    champ: "q4b_type_intervention",
+    options: [
+      { label: "Dispositif médical UE / médicament auxiliaire", value: "DM/méd auxiliaire", next: "q_medaux" },
+      { label: "Capteur / imagerie / exploration fonctionnelle", value: "Capteur/imagerie", next: "q_conform" },
+      { label: "Acte invasif non habituel", value: "Invasif", next: "q_invasif" },
+      { label: "Acte non médical (ostéo, hypnose…)", value: "Non médical", next: "R2_NONMED" },
+    ]
+  },
+  q_medaux: {
+    titre: "Administration conforme à l'autorisation ?",
+    sous: "Le DM ou médicament auxiliaire est-il conforme à son autorisation ?",
+    champ: "q_medaux",
+    options: [
+      { label: "Conforme AMM ou données probantes", value: "Conforme", next: "R2_MEDAUX" },
+    ]
+  },
+  q_conform: {
+    titre: "Utilisation conforme à la destination ?",
+    sous: "Le capteur ou dispositif est-il conforme à sa notice ?",
+    champ: "q_conform",
+    options: [
+      { label: "Oui — conforme", value: "Conforme", next: "q_contraste" },
+      { label: "Non — hors notice", value: "Hors notice", next: "R_RE_DM2" },
+    ]
+  },
+  q_contraste: {
+    titre: "Produit de contraste ou radiopharmaceutique ?",
+    sous: "L'examen implique-t-il un produit de contraste ?",
+    champ: "q_contraste",
+    options: [
+      { label: "Oui", value: "Oui", next: "R2_CONT" },
+      { label: "Non", value: "Non", next: "R2_NOCONT" },
+    ]
+  },
+  q_invasif: {
+    titre: "Franchissement barrière cutanée ou muqueuse ?",
+    sous: "L'acte franchit-il une barrière cutanée ou muqueuse ?",
+    champ: "q_invasif",
+    options: [
+      { label: "Oui", value: "Oui", next: "R1_INVASIF" },
+      { label: "Non", value: "Non", next: "R2_INVASIF" },
+    ]
+  },
+};
+
+const R = {
+  R_RNIPH:    { cat:"RNIPH",  titre:"RNIPH — MR004 CNIL",                          delai:"",        couleur:"#2980b9", icon:"📋", detail:"Recherche n'impliquant pas la personne humaine. Déclaration MR004 à la CNIL." },
+  R_RNIPH_G:  { cat:"RNIPH",  titre:"RNIPH — MR004 + Consentement génétique écrit", delai:"",        couleur:"#2980b9", icon:"🧬", detail:"Étude génétique constitutionnelle nécessitant un consentement écrit spécifique." },
+  R_RNIPH_T:  { cat:"RNIPH",  titre:"RNIPH — MR004 + Info sortie données UE",      delai:"",        couleur:"#2980b9", icon:"🌍", detail:"Transfert de données hors UE : information spécifique à fournir." },
+  R_SNDS:     { cat:"SNDS",   titre:"RNIPH – SNDS — MR005 / MR006 CNIL",           delai:"",        couleur:"#16a085", icon:"🗄️", detail:"Accès aux données du Système National des Données de Santé." },
+  R_RE_MED:   { cat:"RE",     titre:"RE Médicament — EU 536/2014",                  delai:"~6 mois", couleur:"#7c3aed", icon:"💊", detail:"Médicament sans AMM ou hors indication. Règlement européen 536/2014." },
+  R_RE_DM:    { cat:"RE",     titre:"RE Dispositifs Médicaux — Règl. UE 2017/745",  delai:"~6 mois", couleur:"#7c3aed", icon:"🩺", detail:"DM non marqué CE ou hors notice." },
+  R_RE_DM2:   { cat:"RE",     titre:"RE Dispositifs Médicaux — Règl. UE 2017/745",  delai:"~6 mois", couleur:"#7c3aed", icon:"🩺", detail:"Utilisation hors notice d'un dispositif médical." },
+  R1_PSL:     { cat:"RIPH 1", titre:"RIPH 1", delai:"~4 mois",   couleur:"#c0392b", icon:"🔴", detail:"Produit de santé autre (PSL, produit biologique…)." },
+  R1_COS:     { cat:"RIPH 1", titre:"RIPH 1", delai:"~4 mois",   couleur:"#c0392b", icon:"🔴", detail:"Hors produit de santé / cosmétique hors usage normal." },
+  R1_CHIR:    { cat:"RIPH 1", titre:"RIPH 1", delai:"~4 mois",   couleur:"#c0392b", icon:"🔴", detail:"Technique chirurgicale nouvelle." },
+  R1_INVASIF: { cat:"RIPH 1", titre:"RIPH 1", delai:"~4 mois",   couleur:"#c0392b", icon:"🔴", detail:"Acte invasif franchissant la barrière cutanée ou muqueuse." },
+  R2_CHIR:    { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Technique chirurgicale validée." },
+  R2_QUEST:   { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Questionnaire modifiant la prise en charge." },
+  R2_FACE:    { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Biopsie/écouvillonnage touchant la face ou les plis." },
+  R2_SOIN:    { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Prélèvement biologique hors cadre du soin prévu." },
+  R2_AMNIO:   { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Prélèvement amniotique ≥ 5 ml ou non prévu dans le soin." },
+  R2_LCR:     { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Prélèvement LCR ≥ 5 ml ou non prévu dans le soin." },
+  R2_MEDAUX:  { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"DM UE / médicament auxiliaire conforme." },
+  R2_CONT:    { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Examen avec produit de contraste ou radiopharmaceutique." },
+  R2_NOCONT:  { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Capteur/imagerie conforme, sans produit de contraste." },
+  R2_INVASIF: { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Acte invasif ne franchissant pas la barrière cutanée/muqueuse." },
+  R2_NONMED:  { cat:"RIPH 2", titre:"RIPH 2", delai:"~3,5 mois", couleur:"#e67e22", icon:"🟠", detail:"Acte non médical (ostéopathie, hypnose…)." },
+  R3_CAPT:    { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Capteurs extra-corporels non invasifs." },
+  R3_ELEC:    { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Recueil électrophysiologique sur matériel implanté." },
+  R3_RAND:    { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Randomisation simple entre stratégies validées." },
+  R3_ANTH:    { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Anthropométrie, audio-vidéo, TCC." },
+  R3_QUEST:   { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Questionnaire/entretien sans modification de la prise en charge." },
+  R3_SANG1:   { cat:"RIPH 3", titre:"RIPH 3 + contrôle volumes", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Prélèvement sanguin additionnel — vérifier les volumes." },
+  R3_SANG2:   { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Tube supplémentaire lors d'un prélèvement prévu." },
+  R3_BIOL:    { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Prélèvement non invasif (salive, urine, selle…)." },
+  R3_SOIN:    { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Prélèvement biologique dans le cadre du soin prévu." },
+  R3_AMNIO:   { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Prélèvement amniotique prévu, volume < 5 ml." },
+  R3_LCR:     { cat:"RIPH 3", titre:"RIPH 3", delai:"~2,5 mois", couleur:"#27ae60", icon:"🟢", detail:"Prélèvement LCR prévu, volume < 5 ml." },
+  R_NONE:     { cat:"Indéfini",titre:"Cas non défini", delai:"",  couleur:"#7f8c8d", icon:"❓", detail:"Situation non prédéfinie. Veuillez contacter l'URC." },
+};
+
+// ══════════════════════════════════════════════════
+// Moteur
+// ══════════════════════════════════════════════════
+let historique = [], reponses = {};
+const maxDepth = 7;
+
+function render(id) {
+  const el = document.getElementById("content");
+  if (R[id]) { showResult(id); return; }
+  const q = Q[id]; if (!q) return;
+  const step = historique.length + 1;
+  document.getElementById("progress").style.width = Math.min(100,(step/maxDepth)*100)+"%";
+  let h = "";
+  if (historique.length) h += `<button class="back-link" onclick="goBack()">← Revenir</button>`;
+  h += `<div class="card"><span class="step-badge">Étape ${step}</span>`;
+  h += `<h2>${q.titre}</h2><p class="subtitle">${q.sous}</p><div class="options">`;
+  q.options.forEach((_,i) => { h += `<button class="opt-btn" onclick="choose('${id}',${i})">${_.label}</button>`; });
+  h += `</div></div>`;
+  el.innerHTML = h;
+}
+
+function choose(fromId, i) {
+  const q = Q[fromId], opt = q.options[i];
+  reponses[q.champ] = opt.value;
+  historique.push(fromId);
+  render(opt.next);
+}
+
+function goBack() {
+  if (!historique.length) return;
+  const prev = historique.pop();
+  delete reponses[Q[prev].champ];
+  render(prev);
+}
+
+async function showResult(id) {
+  const r = R[id];
+  document.getElementById("progress").style.width = "100%";
+
+  const record = {
+    ...reponses,
+    resultat_id: id,
+    resultat_classification: r.titre,
+    resultat_categorie: r.cat,
+    resultat_delai: r.delai || "",
+    resultat_couleur: r.couleur,
+    date_evaluation: new Date().toISOString(),
+  };
+
+  // Afficher immédiatement avec indicateur de sauvegarde
+  let h = `<div class="result-card" style="background:${r.couleur}">`;
+  h += `<div class="icon">${r.icon}</div><h2>${r.titre}</h2>`;
+  h += `<p><strong>${r.cat}</strong></p>`;
+  if (r.delai) h += `<span class="delai">⏱ Délai estimé : ${r.delai}</span>`;
+  h += `<p class="detail">${r.detail}</p>`;
+  h += `<div class="save-status" id="save-msg"><span class="spinner"></span> Enregistrement en cours…</div>`;
+  h += `<button class="btn-restart" onclick="restart()">🔄 Recommencer</button>`;
+  h += `</div>`;
+
+  // Récapitulatif du chemin parcouru
+  h += `<div class="chemin"><h3>🧭 Chemin parcouru</h3>`;
+  for (const [champ, val] of Object.entries(reponses)) {
+    const qLabel = Object.values(Q).find(q => q.champ === champ)?.titre || champ;
+    h += `<div class="chemin-step"><span class="chemin-q">${qLabel}</span><span class="chemin-a">${val}</span></div>`;
+  }
+  h += `</div>`;
+
+  document.getElementById("content").innerHTML = h;
+
+  // Sauvegarde Budibase
+  const res = await saveRow(record);
+  const msg = document.getElementById("save-msg");
+  if (res.ok) {
+    msg.className = "save-status save-ok";
+    msg.innerHTML = "✅ Enregistré dans Budibase";
+  } else {
+    msg.className = "save-status save-err";
+    msg.innerHTML = "⚠️ Erreur : " + (res.error || "vérifiez la configuration API") + "<br><small>Les données sont affichées ci-dessous pour copie manuelle.</small>";
+  }
+}
+
+function restart() { historique = []; reponses = {}; render("q1"); }
+render("q1");
+</script>
+</body>
+</html>
