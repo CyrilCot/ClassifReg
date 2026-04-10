@@ -59,21 +59,20 @@
 var WEBHOOK_URL = "https://c2cqvoy3n.budibase.app/api/webhooks/wh_dac94bb0118c461e935392117d8d4f4d";
 
 function saveRow(data) {
-  try {
-    var blob = new Blob([JSON.stringify(data)], { type: "text/plain" });
-    var sent = navigator.sendBeacon(WEBHOOK_URL, blob);
-    return sent;
-  } catch (e) {
-    try {
-      var xhr = new XMLHttpRequest();
-      xhr.open("POST", WEBHOOK_URL, true);
-      xhr.setRequestHeader("Content-Type", "text/plain");
-      xhr.send(JSON.stringify(data));
-      return true;
-    } catch (e2) {
+  return fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  }).then(function(response) {
+    if (!response.ok) {
+      console.error("Budibase webhook error: " + response.status + " " + response.statusText);
       return false;
     }
-  }
+    return true;
+  }).catch(function(err) {
+    console.error("Budibase webhook network error:", err);
+    return false;
+  });
 }
 
 var Q = {
@@ -254,18 +253,12 @@ function showResult(id){
   record.resultat_couleur=r.couleur;
   record.date_evaluation=new Date().toISOString();
 
-  var sent=saveRow(record);
-
   var h='<div class="result-card" style="background:'+r.couleur+'">';
   h+='<div class="icon">'+r.icon+'</div><h2>'+r.titre+'</h2>';
   h+='<p><strong>'+r.cat+'</strong></p>';
   if(r.delai) h+='<span class="delai">&#9201; Delai estime : '+r.delai+'</span>';
   h+='<p class="detail">'+r.detail+'</p>';
-  if(sent){
-    h+='<div class="save-status save-ok">&#9989; Enregistre dans Budibase</div>';
-  }else{
-    h+='<div class="save-status save-err">&#9888; Erreur d\'enregistrement</div>';
-  }
+  h+='<div id="save-status-msg" class="save-status">&#8987; Enregistrement en cours...</div>';
   h+='<button class="btn-restart" onclick="restart()">&#128260; Recommencer</button>';
   h+='</div>';
 
@@ -277,6 +270,19 @@ h+='<div class="chemin-step"><span class="chemin-q">'+qLabel+'</span><span class
 h+='</div>';
 
   document.getElementById("content").innerHTML=h;
+
+  saveRow(record).then(function(ok){
+    var el=document.getElementById("save-status-msg");
+    if(el){
+      if(ok){
+        el.className="save-status save-ok";
+        el.innerHTML="&#9989; Enregistre dans Budibase";
+      }else{
+        el.className="save-status save-err";
+        el.innerHTML="&#9888; Erreur d'enregistrement (verifiez le webhook Budibase)";
+      }
+    }
+  });
 }
 
 function restart(){historique=[];reponses={};render("q1");}
