@@ -220,7 +220,7 @@ function render(id){
   if(historique.length) h+='<button class="back-link" onclick="goBack()">&#8592; Revenir</button>';
   h+='<div class="card"><span class="step-badge">Etape '+step+'</span>';
   h+='<h2>'+q.titre+'</h2><p class="subtitle">'+q.sous+'</p><div class="options">';
-  for(var i=0;i<q.options.length;i++){h+='<button class="opt-btn" onclick="choose(+id+,+i)">'+q.options[i].label+'</button>';}
+  for(var i=0;i<q.options.length;i++){h+='<button class="opt-btn" onclick="choose(\''+id+'\','+i+')">'+q.options[i].label+'</button>';}
   h+='</div></div>';
   el.innerHTML=h;
 }
